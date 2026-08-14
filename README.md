@@ -41,7 +41,7 @@ quakecastnet/
 
 ### Note on the vendored `pytorch_forecasting/`
 
-This repository ships a **modified** copy of [pytorch-forecasting](https://github.com/sktime/pytorch-forecasting) (upstream development snapshot reporting version `1.1.1`, which is not available on PyPI; MIT License, Copyright 2020 Jan Beitner — see `pytorch_forecasting/LICENSE`). The copy contains local modifications, including experimental graph-attention submodules in `models/temporal_fusion_transformer/sub_modules.py` that are **not** used by the final models. Shipping the vendored copy guarantees the exact code paths used for the paper; it takes precedence automatically when running from the repository root.
+This repository ships a **modified** copy of [pytorch-forecasting](https://github.com/sktime/pytorch-forecasting) (upstream development snapshot reporting version `1.1.1`, which is not available on PyPI; MIT License, Copyright 2020 Jan Beitner — see `pytorch_forecasting/LICENSE`). 
 
 ## Installation
 
@@ -86,7 +86,3 @@ Citation information (journal, DOI) will be added upon publication.
 ## License
 
 The code in this repository is released under the [MIT License](LICENSE), except the `pytorch_forecasting/` directory, which is distributed under its own MIT License (Copyright 2020 Jan Beitner; see `pytorch_forecasting/LICENSE`).
-
-## Contact
-
-Zhengfa Bi — [zfbi@lbl.gov](mailto:zfbi@lbl.gov)
