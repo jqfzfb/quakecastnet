@@ -46,7 +46,7 @@ This repository ships a **modified** copy of [pytorch-forecasting](https://githu
 ## Installation
 
 ```bash
-git clone https://github.com/<your-github-username>/quakecastnet.git
+git clone https://github.com/jqfzfb/quakecastnet.git
 cd quakecastnet
 conda create -n quakecastnet python=3.13
 conda activate quakecastnet
