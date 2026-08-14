@@ -1,0 +1,30 @@
+# Core deep learning
+# NOTE: pytorch_forecasting is intentionally NOT listed here — this repository
+# ships a modified vendored copy (see README.md, "Repository structure").
+torch==2.11.0            # training env used the +cu126 CUDA build; install the wheel matching your platform
+lightning==2.6.5
+torch-geometric==2.7.0
+torchmetrics==1.9.0
+
+# Scientific stack
+numpy==2.2.6
+pandas==2.3.3
+scipy==1.15.2
+scikit-learn==1.7.2
+h5py==3.16.0
+obspy==1.5.0
+
+# Plotting and maps
+matplotlib==3.10.8
+seaborn==0.13.2
+cartopy==0.25.0
+contextily==1.7.0
+shapely==2.1.2
+
+# Benchmarks and evaluation
+xgboost==3.2.0
+pot==0.9.7            
+
+# Notebook runtime
+jupyter
+ipykernel==7.2.0
