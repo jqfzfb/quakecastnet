@@ -128,19 +128,19 @@ class RollingEnsembleForecaster:
         dates = [pd.to_datetime(np.asarray(seg["date"])) for seg in data_list]
         step = pd.Timedelta(int(np.median(np.diff(dates[0].asi8))))
         if step <= pd.Timedelta(0):
-            raise ValueError(f"采样步长必须为正: {step}")
+            raise ValueError(f"The sampling interval must be positive: {step}")
         t0 = dates[0][0]
         out = []
         for w, d in enumerate(dates):
             if not np.all(np.diff(d.asi8) == step.value):
-                raise ValueError(f"窗口 {w} date 轴非均匀采样")
+                raise ValueError(f"Window {w} has a nonuniform date axis")
             enc_len = len(d) - horizon
             if enc_len < 1:
-                raise ValueError(f"窗口 {w} 长度 {len(d)} <= horizon {horizon}")
+                raise ValueError(f"Window {w} length {len(d)} <= horizon {horizon}")
             g = (d[enc_len] - t0) / step
             gi = int(round(g))
             if abs(float(g) - gi) > 1e-9:
-                raise ValueError(f"窗口 {w} 时间戳未落在采样网格上")
+                raise ValueError(f"Window {w} has timestamps outside the sampling grid")
             out.append(gi)
         return np.asarray(out)
 
@@ -162,12 +162,12 @@ class RollingEnsembleForecaster:
 
         cfg = self.config
         if len(ckpt_paths) < 1:
-            raise ValueError("至少需要一个 ckpt")
+            raise ValueError("At least one checkpoint is required")
         n_apply = len(apply_data_list)
         horizon = training_template.max_prediction_length
         origins = self.origin_step_indices(apply_data_list, horizon)
         if not np.all(np.diff(origins) > 0):
-            raise ValueError("apply_data_list 必须按 origin 严格递增排列")
+            raise ValueError("apply_data_list must be ordered by strictly increasing forecast origin")
 
         cls = model_class if model_class is not None else TemporalFusionTransformerNew
         models = [cls.load_from_checkpoint(p, weights_only=False)
@@ -241,7 +241,7 @@ class RollingEnsembleForecaster:
                                       accelerator=cfg.accelerator)
                     if cfg.verbose:
                         print(f"[roll] batch {bi+1}/{n_batches} w[{i0},{i1}) "
-                              f"pool={len(pool)}窗 ft model {m+1}/{len(models)} "
+                              f"pool={len(pool)} windows; ft model {m+1}/{len(models)} "
                               f"{_time.time()-t_ft:.0f}s", flush=True)
                 pool_sig_prev = pool_sig
             batch = [apply_data_list[j] for j in range(i0, i1)]

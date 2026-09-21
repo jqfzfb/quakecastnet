@@ -73,7 +73,7 @@ def make_datasets(train_list, train_df_target, known, ckpt):
 
 def stratified_bias_table(rows, title):
     print(f"\n===== {title} =====")
-    print(f"{'区间':<12}{'n':>8}{'实测':>9}{'预测':>9}{'偏差':>10}")
+    print(f"{'Interval':<12}{'n':>8}{'Observed':>9}{'Predicted':>9}{'Bias':>10}")
     for lab, n, tg, pr, bias in rows:
         print(f"{lab:<12}{n:>8d}{tg:>9.4f}{pr:>9.4f}{bias:>+10.4f}")
 
@@ -81,11 +81,11 @@ def stratified_bias_table(rows, title):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--ckpt', default=None)
-    ap.add_argument('--stride', type=int, default=1, help='应用窗口抽样步长 (调试用)')
+    ap.add_argument('--stride', type=int, default=1, help='Subsampling stride for application windows (for debugging)')
     ap.add_argument('--batch-size', type=int, default=512)
     ap.add_argument('--save-cache', action='store_true',
-                    help='stride=1 时用与 notebook 新 cell 相同的路径生成 '
-                         'tft_shutin_decay_results.npy 并计算 combined score 对照')
+                    help='With stride=1, follow the notebook workflow to generate '
+                         'tft_shutin_decay_results.npy and compare combined scores')
     args = ap.parse_args()
 
     if args.ckpt is None:
@@ -126,7 +126,7 @@ def main():
         quantum = float(_pos[0])
     else:
         quantum = None
-    print(f"detection_quantum (2-min raw pre-zero, 网格间距) = {quantum}")
+    print(f"detection_quantum (2-min raw pre-zero, grid spacing) = {quantum}")
     est = ShutInDecayEstimator(threshold_bbl=THRESHOLD_BBL, step_hours=STEP_HOURS,
                                detection_quantum=quantum)
     l2022 = np.load('preparation/dataset/UtahForge2022/seismic_inject_dataset2022_ext.npy',
@@ -154,7 +154,7 @@ def main():
     cur = np.load(cache, allow_pickle=True)
     cur_tgt = np.stack([cur[j]['target'] for j in sel])
     cur_pred = np.stack([cur[j]['prediction'] for j in sel]).mean(axis=-1)
-    assert np.allclose(cur_tgt, tgt, atol=1e-4), "缓存 target 与新推理 target 不一致"
+    assert np.allclose(cur_tgt, tgt, atol=1e-4), "Cached targets do not match the new inference targets"
 
     D = np.zeros(len(inj_raw))
     cnt = 0.0
@@ -167,20 +167,20 @@ def main():
     def rows_for(pm):
         rows = []
         m = ~gate
-        rows.append(('注入口', int(m.sum()), tgt[m].mean(), pm[m].mean(), (pm - tgt)[m].mean()))
-        for lo, hi, lab in [(1, 2, '起点(Δt≤2)'), (3, 12, '0.3-1.6h'),
+        rows.append(('Injection on', int(m.sum()), tgt[m].mean(), pm[m].mean(), (pm - tgt)[m].mean()))
+        for lo, hi, lab in [(1, 2, 'Onset(dt<=2)'), (3, 12, '0.3-1.6h'),
                             (13, 48, '1.6-6.4h'), (49, 96, '6.4-12.8h'),
                             (97, 1 << 30, '>12.8h')]:
             m = gate & (dt_dec >= lo) & (dt_dec <= hi)
             if m.sum():
                 rows.append((lab, int(m.sum()), tgt[m].mean(), pm[m].mean(),
                              (pm - tgt)[m].mean()))
-        rows.append(('整体MAE', int(tgt.size), tgt.mean(), pm.mean(),
+        rows.append(('Overall MAE', int(tgt.size), tgt.mean(), pm.mean(),
                      np.abs(pm - tgt).mean()))
         return rows
 
-    stratified_bias_table(rows_for(cur_pred), 'current TFT (_dc 最新 ckpt)')
-    stratified_bias_table(rows_for(pred_mean), 'TFT + shutin-decay (本模块)')
+    stratified_bias_table(rows_for(cur_pred), 'current TFT (latest _dc checkpoint)')
+    stratified_bias_table(rows_for(pred_mean), 'TFT + shutin-decay (this module)')
 
     bias_c = pred_mean - tgt
     bias_cur = cur_pred - tgt
@@ -189,15 +189,15 @@ def main():
     t_idx = np.arange(80)[None, :]
     m_onset = gate & (dt_dec < t_idx + 2)
     onset_maxdiff = float(np.abs(pred_mean[m_onset] - cur_pred[m_onset]).max()) if m_onset.any() else 0.0
-    print("\n===== 验收 (ADR-0004, preorigin-only) =====")
+    print("\n===== Validation (ADR-0004, preorigin-only) =====")
     checks = [
         (">12.8h |bias| ≤ 0.03", abs(bias_c[m_late].mean()) <= 0.03,
          f"{bias_c[m_late].mean():+.4f} (current {bias_cur[m_late].mean():+.4f})"),
-        ("注入口与 current 逐值相等 (float32 精度内)", gate_off_maxdiff < 1e-5,
+        ("Injection-on predictions match current elementwise within float32 precision", gate_off_maxdiff < 1e-5,
          f"max diff = {gate_off_maxdiff:.2e}"),
-        ("mid-decoder onset 与 current 逐值相等 (float32 精度内)", onset_maxdiff < 1e-5,
+        ("Mid-decoder onset predictions match current elementwise within float32 precision", onset_maxdiff < 1e-5,
          f"max diff = {onset_maxdiff:.2e}"),
-        ("整体 MAE 改善", np.abs(bias_c).mean() < np.abs(bias_cur).mean(),
+        ("Overall MAE improved", np.abs(bias_c).mean() < np.abs(bias_cur).mean(),
          f"{np.abs(bias_c).mean():.4f} vs {np.abs(bias_cur).mean():.4f}"),
     ]
     for name, ok, val in checks:
@@ -209,13 +209,13 @@ def main():
     n_early = max(1, int(round(0.25 * len(sel))))
     early_m = np.zeros(len(sel), bool)
     early_m[:n_early] = True
-    print("\n===== v2 诊断 (ADR-0007) =====")
+    print("\n===== v2 diagnostics (ADR-0007) =====")
     if have.any():
         q = np.nanpercentile(w_arr, [10, 50, 90])
-        print(f"A2 权重 w (n={have.sum()} 个进行中窗): p10/p50/p90 = "
+        print(f"A2 weight w (n={have.sum()} ongoing windows): p10/p50/p90 = "
               f"{q[0]:.3f}/{q[1]:.3f}/{q[2]:.3f}; "
-              f"early 均值 {np.nanmean(w_arr[early_m]):.3f}, "
-              f"late 均值 {np.nanmean(w_arr[~early_m]):.3f}")
+              f"early mean {np.nanmean(w_arr[early_m]):.3f}, "
+              f"late mean {np.nanmean(w_arr[~early_m]):.3f}")
 
     floored = np.zeros_like(gate)
     curve_val = np.zeros_like(tgt)
@@ -246,31 +246,31 @@ def main():
         return 200.0 * np.abs(a - b) / (np.abs(a) + np.abs(b) + 1e-12)
 
     b1_net_ok = True
-    b1_msg = "B1 未触发 (0 步)"
+    b1_msg = "B1 not triggered (0 steps)"
     if floored.any():
         obs = tgt[floored]
         sm_floor = _smape(obs, np.zeros_like(obs))
         sm_unfl = _smape(obs, blend_val[floored])
         n0 = int((obs == 0).sum())
         b1_net_ok = sm_floor.mean() < sm_unfl.mean()
-        b1_msg = (f"置0步 {int(floored.sum())} (obs==0: {n0}, "
-                  f"反噬 obs>0: {int(floored.sum()) - n0}); "
-                  f"步均 SMAPE 置0 {sm_floor.mean():.1f} vs 不置0 {sm_unfl.mean():.1f}")
+        b1_msg = (f"Steps set to zero: {int(floored.sum())} (obs==0: {n0}, "
+                  f"positive observations affected (obs>0): {int(floored.sum()) - n0}); "
+                  f"mean per-step SMAPE with zeroing {sm_floor.mean():.1f} vs without zeroing {sm_unfl.mean():.1f}")
         fl_early = int(floored[early_m].sum())
-        print(f"B1: {b1_msg}; early 窗触发步数 = {fl_early} (应为 0)")
+        print(f"B1: {b1_msg}; triggered steps in early windows = {fl_early} (expected 0)")
         b1_net_ok = b1_net_ok and fl_early == 0
-    print(f"  [{'PASS' if b1_net_ok else 'FAIL'}] B1 净收益为正且 early 零触发: {b1_msg}")
+    print(f"  [{'PASS' if b1_net_ok else 'FAIL'}] B1 provides a net benefit with no triggers in early windows: {b1_msg}")
 
-    print("\ng(Δt) 参数随 origin 演化 (抽样):")
+    print("\ng(Δt) parameters across sampled origins:")
     for w in np.linspace(0, len(sel) - 1, 5).astype(int):
         wc = model.primed_windows[w][1]
         o = int(origins_all[sel][w])
-        print(f"  窗口 {w:4d} origin={o} ({ta_d[o]}): kind={wc.g.kind} "
+        print(f"  window {w:4d} origin={o} ({ta_d[o]}): kind={wc.g.kind} "
               f"params={np.round(wc.g.params_vector, 3).tolist()} scale={wc.g.scale:.3f} "
               f"A_ep={None if wc.a_ep is None else round(wc.a_ep, 4)}")
 
     if args.save_cache:
-        assert args.stride == 1, "--save-cache 要求 stride=1 (与 notebook cell 路径一致)"
+        assert args.stride == 1, "--save-cache requires stride=1 (matching the notebook workflow)"
         _, _, _, _, norm_param = load_raw_series(
             np.load('preparation/dataset/UtahForge2024/seismic_inject_dataset2024_long.npy',
                     allow_pickle=True).item(), with_norm=True)
@@ -280,7 +280,7 @@ def main():
         cache_out = os.path.join('results', 'utahforge2024', LOG_NAME,
                                  'tft_shutin_decay_results.npy')
         np.save(cache_out, results_decay)
-        print(f"\n[saved] results_decay ({len(results_decay)} 窗口) -> {cache_out}")
+        print(f"\n[saved] results_decay ({len(results_decay)} windows) -> {cache_out}")
 
         rdir = os.path.join('results', 'utahforge2024', LOG_NAME)
         results_sets = {
@@ -311,7 +311,7 @@ def main():
             g[~np.isfinite(M)] = np.nan
             G.append(g)
         cs = np.nanmean(np.stack(G, axis=0), axis=0)
-        print(f"\ncombined score (early = 起始最早 {n_early}/{len(start)} 窗):")
+        print(f"\ncombined score (early = first {n_early}/{len(start)} windows):")
         print(f"{'model':<18}{'overall':>10}{'early':>10}")
         for i, m in enumerate(models):
             print(f"{m:<18}{np.nanmean(cs[:, i]):>10.4f}{np.nanmean(cs[early_idx, i]):>10.4f}")
@@ -320,12 +320,12 @@ def main():
         ea = np.nanmean(cs[early_idx], axis=0)
         ok_ov = np.argmax(ov) == i_dec
         ok_ea = np.argmax(ea) == i_dec
-        print(f"  [{'PASS' if ok_ov else 'FAIL'}] overall 排名第一 (ADR-0007 验收 1): "
-              f"decay {ov[i_dec]:.4f}, 最强对手 "
+        print(f"  [{'PASS' if ok_ov else 'FAIL'}] overall ranked first (ADR-0007 Validation 1): "
+              f"decay {ov[i_dec]:.4f}, best competing model "
               f"{models[int(np.argsort(ov)[-2 if ok_ov else -1])]} "
               f"{np.sort(ov)[-2 if ok_ov else -1]:.4f}")
-        print(f"  [{'PASS' if ok_ea else 'FAIL'}] early 排名第一 (ADR-0007 验收 1): "
-              f"decay {ea[i_dec]:.4f}, 最强对手 "
+        print(f"  [{'PASS' if ok_ea else 'FAIL'}] early ranked first (ADR-0007 Validation 1): "
+              f"decay {ea[i_dec]:.4f}, best competing model "
               f"{models[int(np.argsort(ea)[-2 if ok_ea else -1])]} "
               f"{np.sort(ea)[-2 if ok_ea else -1]:.4f}")
 

@@ -351,13 +351,13 @@ class ShutInDecayEstimator:
     @property
     def app_injection(self) -> np.ndarray:
         if self._app_inj is None:
-            raise RuntimeError("set_application_series 未调用")
+            raise RuntimeError("Call set_application_series before using this method")
         return self._app_inj
 
     @property
     def app_seismic(self) -> np.ndarray:
         if self._app_seis is None:
-            raise RuntimeError("set_application_series 未调用")
+            raise RuntimeError("Call set_application_series before using this method")
         return self._app_seis
 
 
@@ -447,24 +447,24 @@ class ShutInDecayTFT(TemporalFusionTransformer):
         obs = np.stack([seis[o:o + n_dec] / self._seis_range for o in origins])
         if obs.shape != targets.shape or not np.allclose(targets, obs, rtol=1e-3, atol=1e-4):
             raise RuntimeError(
-                "ShutInDecayTFT 对齐校验失败: "
-                "predict 输出顺序与 prime 的 window_origins 不一致"
+                "ShutInDecayTFT alignment check failed: "
+                "the prediction order does not match window_origins supplied to prime"
             )
         self._alignment_checked = True
 
     def predict(self, dataloader, mode="raw", return_x=True, **kwargs):
         out = super().predict(dataloader, mode=mode, return_x=return_x, **kwargs)
         if self._primed_windows is None or mode != "raw":
-            warnings.warn("ShutInDecayTFT: 未 prime 或 mode != 'raw', 返回原 TFT 预测")
+            warnings.warn("ShutInDecayTFT: prime was not called or mode != 'raw'; returning the original TFT predictions")
             return out
         pred = out.output["prediction"]
         if isinstance(pred, (list, tuple)) or pred.dim() != 3:
-            warnings.warn("ShutInDecayTFT: 非单目标 3D 预测, 跳过修正")
+            warnings.warn("ShutInDecayTFT: predictions must be a single-target 3D tensor; skipping correction")
             return out
         if pred.shape[0] != len(self._primed_windows):
             warnings.warn(
-                f"ShutInDecayTFT: 预测窗口数 ({pred.shape[0]}) 与 prime 窗口数 "
-                f"({len(self._primed_windows)}) 不一致, 跳过修正"
+                f"ShutInDecayTFT: prediction window count ({pred.shape[0]}) does not match the primed window count "
+                f"({len(self._primed_windows)}); skipping correction"
             )
             return out
         if not self._alignment_checked:

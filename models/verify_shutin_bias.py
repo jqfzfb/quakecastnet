@@ -99,7 +99,7 @@ def main():
     ap.add_argument('--log-name', default='utahforge2024_i200o80t2024-04-06-06-06_0718')
     ap.add_argument('--normm', default='min_max', choices=['mea_std', 'min_max'])
     ap.add_argument('--stride', type=int, default=8)
-    ap.add_argument('--ckpt', default=None, help='默认取 log 目录最新 version 的 ckpts 里最后的 checkpoint')
+    ap.add_argument('--ckpt', default=None, help='Defaults to the last checkpoint in ckpts under the latest log version')
     args = ap.parse_args()
 
     max_encoder_length, max_prediction_length, downsample_rate = 200, 80, 4
@@ -152,7 +152,7 @@ def main():
     s_inj = np.asarray(list(meta['norm_param']['injection_rate'].values()))
     inj_sc = training.scalers['injection_rate']
     gate_z1 = 0.01 * float(inj_sc.scale_) + float(inj_sc.mean_)
-    print(f"normm={args.normm} | 门限 z2<0.01 <=> raw injection < {gate_z1 * s_inj[1] + s_inj[0]:.2f} bbl/min")
+    print(f"normm={args.normm} | threshold z2<0.01 <=> raw injection < {gate_z1 * s_inj[1] + s_inj[0]:.2f} bbl/min")
 
     sub_list = []
     for n, i in enumerate(range(0, len(ap24), args.stride)):
@@ -218,11 +218,11 @@ def main():
               f"tgt={tgt_raw[m].mean():.4f} pred={(pred_mean[m] * s_seis[1] + s_seis[0]).mean():.4f} "
               f"K={K[m].mean():.3f}")
 
-    print("\n===== 验收 (docs/proposals/physics-tft-shutin-overprediction.md §5) =====")
+    print("\n===== Validation (docs/proposals/physics-tft-shutin-overprediction.md §5) =====")
     checks = [
-        (">12.8h 偏差 < +0.03", bias_late < 0.03, f"{bias_late:+.4f}"),
-        (">12.8h K 均值 > 0.2 (模块存活)", k_late > 0.2, f"{k_late:.3f}"),
-        ("gate OFF 偏差 |.| < 0.03 (无回归)", abs(bias[~gate].mean()) < 0.03, f"{bias[~gate].mean():+.4f}"),
+        (">12.8h bias < +0.03", bias_late < 0.03, f"{bias_late:+.4f}"),
+        (">12.8h mean K > 0.2 (module active)", k_late > 0.2, f"{k_late:.3f}"),
+        ("gate OFF absolute bias < 0.03 (no regression)", abs(bias[~gate].mean()) < 0.03, f"{bias[~gate].mean():+.4f}"),
     ]
     for name, ok, val in checks:
         print(f"  [{'PASS' if ok else 'FAIL'}] {name}: {val}")

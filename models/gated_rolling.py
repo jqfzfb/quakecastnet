@@ -15,19 +15,19 @@ class GatedRollingEnsembleForecaster(RollingEnsembleForecaster):
 
 
 def recenter_quantile_bands(point_source, band_source, atol=1e-9):
-    assert len(point_source) == len(band_source), "两侧窗口数不一致"
+    assert len(point_source) == len(band_source), "Point and band sources have different window counts"
     out = []
     for i, (rp, rb) in enumerate(zip(point_source, band_source)):
         tp = np.asarray(rp["target"], float)
         tb = np.asarray(rb["target"], float)
-        assert np.array_equal(tp, tb), f"窗口 {i} target 不一致 — 两侧窗口未对齐"
+        assert np.array_equal(tp, tb), f"Window {i} has mismatched targets; the point and band sources are not aligned"
         qp = np.asarray(rp["prediction"], float)
         qb = np.asarray(rb["prediction"], float)
-        assert qp.ndim == 2 and qp.shape == qb.shape, f"窗口 {i} 预测形状不一致"
+        assert qp.ndim == 2 and qp.shape == qb.shape, f"Window {i} has mismatched prediction shapes"
         shift = qp.mean(axis=1) - qb.mean(axis=1)
         q_new = qb + shift[:, None]
         assert np.allclose(q_new.mean(axis=1), qp.mean(axis=1), atol=atol), \
-            f"窗口 {i} 均值保持断言失败"
+            f"Window {i} failed the mean-preservation assertion"
         rd = dict(rp)
         rd["prediction"] = q_new
         out.append(rd)
@@ -49,6 +49,6 @@ def run_gated_recentered(config, *, ckpt_paths, training_template,
     fc_ens = RollingEnsembleForecaster(cfg_ens)
     results_ens = fc_ens.run(**run_kwargs)
     assert not any(e["finetuned"] for e in fc_ens.info_["refit_log"]), \
-        "带源那遍发生了微调 — 纯集成前提被破坏"
+        "Fine-tuning occurred during the band-source pass; this pass requires an ensemble without fine-tuning"
 
     return recenter_quantile_bands(results_rolling, results_ens), results_ens, fc.info_
