@@ -211,7 +211,7 @@ def plot_prob_comparison(P_set1, bin_edges, t, P_set2=None, label1='ground truth
 
 
 def plot_magnitude_distribution(P_true, magnitude_bins, title="True Magnitude Distribution", color="royalblue"):
-    assert len(P_true) == len(magnitude_bins) - 1, "P_true 与 magnitude_bins 不匹配"
+    assert len(P_true) == len(magnitude_bins) - 1, "P_true must have one entry per magnitude bin"
 
     bin_centers = (magnitude_bins[:-1] + magnitude_bins[1:]) / 2
     bin_width = magnitude_bins[1] - magnitude_bins[0]
@@ -480,7 +480,7 @@ def plot_quantile_calibration_multi(
     for i, (alphas_sorted, emp, ks, timestep) in enumerate(results):
         alphas_sorted = np.asarray(alphas_sorted, dtype=float).ravel()
         emp = np.asarray(emp, dtype=float).ravel()
-        assert alphas_sorted.shape == emp.shape, "alphas_sorted 与 emp 长度必须一致"
+        assert alphas_sorted.shape == emp.shape, "alphas_sorted and emp must have the same shape"
 
         diff = np.abs(emp - alphas_sorted)
         if ks is None:
@@ -554,7 +554,7 @@ def draw_sequence_diff(time_data_list, uncertainty=None, title=None, figsize=(12
             u_lv = np.linspace(0.5 / k, 0.5 - 0.5 / k, k)
         else:
             u_lv = np.asarray(u_levels)
-            assert len(u_lv) == k, "u_levels 长度必须等于下侧带数量 k"
+            assert len(u_lv) == k, "u_levels must contain k values, one per lower band"
 
         idx = int(np.argmin(np.abs(u_lv - q)))
         lower = np.asarray(u_band[idx], dtype=float)

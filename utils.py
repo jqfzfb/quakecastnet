@@ -316,14 +316,14 @@ def evaluate_time_series_similarity(
         quantiles = [float(q) for q in quantiles]
         if bs_arr.shape[1] != len(quantiles):
             raise ValueError(
-                f"bs 有 {bs_arr.shape[1]} 列, 但 quantiles 有 {len(quantiles)} 个值"
+                f"bs has {bs_arr.shape[1]} columns, but quantiles contains {len(quantiles)} values"
             )
         qp = bs_arr[:n][mask]
         y = xa.copy()
         finite = np.all(np.isfinite(qp), axis=1) & np.isfinite(y)
         qp, y = qp[finite], y[finite]
         if qp.shape[0] == 0:
-            raise ValueError("bs 与 target 无有效重叠行")
+            raise ValueError("bs and target have no valid overlapping rows")
         for k, q in enumerate(quantiles):
             pred_q = qp[:, k]
             err = y - pred_q
@@ -479,7 +479,7 @@ def decay_to_zero(time_series_in, start_index, mode='linear', decay_fraction=1.0
     import copy
     time_series = copy.deepcopy(time_series_in)
     if start_index < 0 or start_index >= len(time_series):
-        raise ValueError("start_index 超出时间序列范围")
+        raise ValueError("start_index is outside the time series")
 
     n = len(time_series) - start_index
     if n == 0:
@@ -493,7 +493,7 @@ def decay_to_zero(time_series_in, start_index, mode='linear', decay_fraction=1.0
         decay_weights = np.exp(-np.linspace(0, 5, decay_steps))
         decay_weights = (decay_weighcompute_b_valuets - decay_weights.min()) / (decay_weights.max() - decay_weights.min())
     else:
-        raise ValueError("mode 仅支持 'linear'、'exponential'")
+        raise ValueError("mode must be 'linear' or 'exponential'")
 
     full_decay_weights = np.zeros(n)
     full_decay_weights[:decay_steps] = decay_weights
@@ -601,7 +601,7 @@ def masked_op(array: np.ndarray, op: str = "mean", axis: int = 0, mask: np.ndarr
 
 def decay_to_zero(time_series, start_index, mode='linear', decay_fraction=1.0):
     if start_index < 0 or start_index >= len(time_series):
-        raise ValueError("start_index 超出时间序列范围")
+        raise ValueError("start_index is outside the time series")
 
     n = len(time_series) - start_index
     if n == 0:
@@ -615,7 +615,7 @@ def decay_to_zero(time_series, start_index, mode='linear', decay_fraction=1.0):
         decay_weights = np.exp(-np.linspace(0, 5, decay_steps))
         decay_weights = (decay_weights - decay_weights.min()) / (decay_weights.max() - decay_weights.min())
     else:
-        raise ValueError("mode 仅支持 'linear'、'exponential'")
+        raise ValueError("mode must be 'linear' or 'exponential'")
 
     full_decay_weights = np.zeros(n)
     full_decay_weights[:decay_steps] = decay_weights
@@ -1000,10 +1000,10 @@ def merge_and_evaluate_forecasts(results, time_axis_all, result_path=None):
 
 def compute_all_window_metrics(results_sets, window_metric_names):
     if not isinstance(results_sets, dict) or len(results_sets) == 0:
-        raise ValueError("results_sets 必须是非空字典。")
+        raise ValueError("results_sets must be a nonempty dictionary.")
 
     if len(window_metric_names) == 0:
-        raise ValueError("window_metric_names 不能为空。")
+        raise ValueError("window_metric_names must not be empty.")
 
     def _compute_single_window_metrics(res):
         start_time = []
@@ -1022,7 +1022,7 @@ def compute_all_window_metrics(results_sets, window_metric_names):
             for name in window_metric_names:
                 if name not in metric_result:
                     raise KeyError(
-                        f"第 {i} 个窗口的评价结果中不存在指标：{name}"
+                        f"Evaluation results for window {i} do not contain metric: {name}"
                     )
 
                 metrics[name].append(
@@ -1035,7 +1035,7 @@ def compute_all_window_metrics(results_sets, window_metric_names):
 
             if target_index.size == 0:
                 raise ValueError(
-                    f"第 {i} 个窗口的 target_index 为空。"
+                    f"Window {i} has an empty target_index."
                 )
 
             date_array = np.asarray(rd["date"])
@@ -1076,11 +1076,11 @@ def prepare_baseline_inputs(results, meta, norm_stats, max_prediction_length, us
     def _history_upto_window(rd):
         n_tgt = len(rd['target'])
         assert n_tgt == max_prediction_length, \
-            f"decoder 长度 {n_tgt} != {max_prediction_length}"
+            f"Decoder length {n_tgt} != {max_prediction_length}"
         assert len(rd['date_index']) == len(rd['date']), \
-            "date_index 与 date 长度不一致"
+            "date_index and date must have the same length"
         assert rd['target_index'][0] == len(rd['date']) - n_tgt, \
-            "decoder 段不在窗口末尾"
+            "The decoder segment must be at the end of the window"
 
         t0 = rd['date_index'][-n_tgt]
         seis = hist_seis[:t0 + n_tgt]
@@ -1155,7 +1155,7 @@ def run_etas_parallel(model_key, results, get_inputs_fn, max_pred_len, dt,
         for k, pred in iterator:
             preds[k] = pred
             if progress_name and (k + 1) % 50 == 0:
-                print(f"{progress_name}: {k+1}/{n} 窗口完成", flush=True)
+                print(f"{progress_name}: {k+1}/{n} windows completed", flush=True)
     finally:
         if ex is not None:
             ex.shutdown(wait=True)
@@ -1230,7 +1230,7 @@ def run_etas_frozen(model_key, results, get_inputs_fn, fit_rate, fit_inj, max_pr
     t0 = time.time()
     params = _fit_etas_once(model_key, fit_rate, fit_inj, dt, window_size, step_size)
     if progress_name:
-        print(f"{progress_name}: pre-zero 拟合完成 ({time.time()-t0:.1f}s), 开始冻结预测", flush=True)
+        print(f"{progress_name}: pre-zero fit completed ({time.time()-t0:.1f}s); starting forecasts with fixed parameters", flush=True)
 
     window_inputs = [_prep_window_inputs(rd, get_inputs_fn, i_inj, max_pred_len) for rd in results]
     args_list = [(k, model_key, wi[0], wi[1], wi[2], params, cfg) for k, wi in enumerate(window_inputs)]
@@ -1247,7 +1247,7 @@ def run_etas_frozen(model_key, results, get_inputs_fn, fit_rate, fit_inj, max_pr
         for k, pred in iterator:
             preds[k] = pred
             if progress_name and (k + 1) % 50 == 0:
-                print(f"{progress_name}: {k+1}/{n} 窗口完成", flush=True)
+                print(f"{progress_name}: {k+1}/{n} windows completed", flush=True)
     finally:
         if ex is not None:
             ex.shutdown(wait=True)

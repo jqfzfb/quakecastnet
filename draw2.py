@@ -188,11 +188,11 @@ def plot_window_metrics(
 ):
 
     if len(window_metric_names) == 0:
-        raise ValueError("window_metric_names 不能为空。")
+        raise ValueError("window_metric_names must not be empty.")
 
     if ylim_robust_iqr is not None and ylim_robust_iqr <= 0:
         raise ValueError(
-            "ylim_robust_iqr 必须是正数 (箱线图 fence 的 IQR 倍数, 常用 1.5 或 3.0)。"
+            "ylim_robust_iqr must be positive (the IQR multiplier for boxplot fences, typically 1.5 or 3.0)."
         )
 
     print(
@@ -336,10 +336,10 @@ def plot_best_result_by_time(
 ):
 
     if not isinstance(results_sets, dict) or len(results_sets) == 0:
-        raise ValueError("results_sets 必须是非空字典。")
+        raise ValueError("results_sets must be a nonempty dictionary.")
 
     if len(window_metric_names) == 0:
-        raise ValueError("window_metric_names 不能为空。")
+        raise ValueError("window_metric_names must not be empty.")
 
     default_higher_is_better = {
         "Pearson_correlation": True,
@@ -380,8 +380,8 @@ def plot_best_result_by_time(
             metric_directions[metric_name] = False
         else:
             raise ValueError(
-                f"无法判断指标 {metric_name!r} 是越大越好还是越小越好。"
-                "\n请通过 higher_is_better 指定，例如："
+                f"Cannot determine whether higher or lower values are better for metric {metric_name!r}."
+                "\nSpecify the direction with higher_is_better, for example:"
                 f"\n{{'{metric_name}': False}}"
             )
 
@@ -402,8 +402,8 @@ def plot_best_result_by_time(
             for metric_name in window_metric_names:
                 if metric_name not in metric_result:
                     raise KeyError(
-                        f"结果集第 {window_idx} 个窗口中不存在指标 "
-                        f"{metric_name!r}。"
+                        f"Result window {window_idx} does not contain metric "
+                        f"{metric_name!r}."
                     )
 
                 metrics[metric_name].append(
@@ -416,8 +416,8 @@ def plot_best_result_by_time(
 
             if target_index.size == 0:
                 raise ValueError(
-                    f"结果集第 {window_idx} 个窗口的 "
-                    "target_index 为空。"
+                    f"Result window {window_idx} has an empty "
+                    "target_index."
                 )
 
             date_array = np.asarray(rd["date"])
@@ -428,8 +428,8 @@ def plot_best_result_by_time(
                 or first_target_index >= len(date_array)
             ):
                 raise IndexError(
-                    f"第 {window_idx} 个窗口的 target_index[0]="
-                    f"{first_target_index} 超出 date 范围。"
+                    f"Window {window_idx}: target_index[0]="
+                    f"{first_target_index} is outside the date array."
                 )
 
             start_time.append(

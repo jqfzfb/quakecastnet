@@ -3,7 +3,7 @@
 # ships a modified vendored copy (see README.md, "Repository structure").
 torch==2.11.0            # training env used the +cu126 CUDA build; install the wheel matching your platform
 lightning==2.6.5
-torch-geometric==2.7.0
+torch-geometric==2.7.0   # imported at module load by the vendored pytorch_forecasting TFT submodules (its GAT code paths are unused)
 torchmetrics==1.9.0
 
 # Scientific stack
@@ -23,7 +23,7 @@ shapely==2.1.2
 
 # Benchmarks and evaluation
 xgboost==3.2.0
-pot==0.9.7            
+pot==0.9.7               # Python Optimal Transport (imported as `ot`)
 
 # Notebook runtime
 jupyter
